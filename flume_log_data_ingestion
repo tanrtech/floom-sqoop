@@ -1,0 +1,87 @@
+Sudo apt-get update && sudo apt-get upgrade -y
+
+sudo apt-get install openjdk-7-jdk -y
+
+wget http://archive.apache.org/dist/flume/1.4.0/apache-flume-1.4.0-bin.tar.gz
+
+tar -zxvf apache-flume-1.4.0-bin.tar.gz
+
+cd apache-flume-1.4.0-bin/conf/
+
+mv flume-env.sh.template flume-env.sh
+----------------------------------------------------------------------------------------
+cd /home/ubuntu/apache-flume-1.4.0-bin/lib
+
+ls -lrth
+
+nano /home/ubuntu/apache-flume-1.4.0-bin/conf/flume-env.sh
+#JAVA_HOME=/usr/lib/jvm/java-7-openjdk-amd64
+JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+FLUME_CLASSPATH="/home/ubuntu/apache-flume-1.4.0-bin/lib/*.jar"
+
+cd
+----------------------------------------------------------------------------------------
+/home/ubuntu/apache-flume-1.4.0-bin/conf
+ls -lrth
+
+nano apache-flume-1.4.0-bin/conf/flume.conf
+# Flume agent config
+cloudage.sources = eventlog
+cloudage.channels = file_channel
+cloudage.sinks = sink_to_hdfs
+
+# Define / Configure source
+cloudage.sources.eventlog.type = exec
+cloudage.sources.eventlog.command = tail -F /var/log/flume/eventlog.log
+cloudage.sources.eventlog.restart = true
+cloudage.sources.eventlog.batchSize = 1000
+#cloudage.sources.eventlog.type = seq
+
+# HDFS sinks
+cloudage.sinks.sink_to_hdfs.type = hdfs
+cloudage.sinks.sink_to_hdfs.hdfs.fileType = DataStream
+cloudage.sinks.sink_to_hdfs.hdfs.path = hdfs://localhost:9000/user/ubuntu/flume/events
+cloudage.sinks.sink_to_hdfs.hdfs.filePrefix = eventlog
+cloudage.sinks.sink_to_hdfs.hdfs.fileSuffix = .log
+cloudage.sinks.sink_to_hdfs.hdfs.batchSize = 1000
+
+# Use a channel which buffers events in memory
+cloudage.channels.file_channel.type = file
+cloudage.channels.file_channel.checkpointDir = /var/log/flume/checkpoint
+cloudage.channels.file_channel.dataDirs = /var/log/flume/data
+
+# Bind the source and sink to the channel
+cloudage.sources.eventlog.channels = file_channel
+cloudage.sinks.sink_to_hdfs.channel = file_channel
+
+----------------------------------------------------------------------------------------
+
+sudo mkdir /var/log/flume/
+sudo mkdir /var/log/flume/checkpoint/
+sudo mkdir /var/log/flume/data/
+sudo chmod 777 -R /var/log/flume
+
+----------------------------------------------------------------------------------------
+wget https://s3-ap-southeast-2.amazonaws.com/datasetz/generate_logs.py
+wget https://s3.amazonaws.com/cloud-age/generate_logs.py
+wget https://s3.amazonaws.com/cloud-age/generate_logs.py
+
+
+
+sudo apt install python
+sudo python generate_logs.py
+
+hadoop fs -mkdir hdfs://localhost:9000/user/ubuntu/flume/events
+
+
+cd apache-flume-1.4.0-bin/bin
+./flume-ng agent --conf /home/ubuntu/apache-flume-1.4.0-bin/conf/ --conf-file /home/ubuntu/apache-flume-1.4.0-bin/conf/flume.conf  --name cloudage
+nc -l localhost 1234
+telnet localhost 1234
+or
+nano .bashrc
+export FLUME_PREFIX=/home/ubuntu/apache-flume-1.4.0-bin/
+export PATH=$PATH:$FLUME_PREFIX/bin
+For a seperate flume server make sure common*.jar is in flume lib
+cp /usr/local/hadoop/lib/common*.jar /home/ubuntu/ apache-flume-1.4.0-bin/lib/
+

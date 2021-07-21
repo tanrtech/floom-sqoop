@@ -76,6 +76,8 @@ hadoop fs -mkdir hdfs://localhost:9000/user/ubuntu/flume/events
 
 cd apache-flume-1.4.0-bin/bin
 ./flume-ng agent --conf /home/ubuntu/apache-flume-1.4.0-bin/conf/ --conf-file /home/ubuntu/apache-flume-1.4.0-bin/conf/flume.conf  --name cloudage
+
+
 nc -l localhost 1234
 telnet localhost 1234
 or
